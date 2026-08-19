@@ -1,8 +1,8 @@
-const VERSION = "scorematch-v2";
+const VERSION = "scorematch-v3-brand-states";
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const OFFLINE_URL = "/offline.html";
-const APP_SHELL = ["/", "/matches", OFFLINE_URL, "/manifest.webmanifest", "/icon.svg"];
+const APP_SHELL = ["/", "/matches", OFFLINE_URL, "/manifest.webmanifest", "/scorematch-logo.svg", "/scorematch-logo.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -89,8 +89,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: "/icon.svg",
-      badge: "/icon.svg",
+      icon: "/scorematch-logo.svg",
+      badge: "/scorematch-logo.svg",
       tag: payload.tag || "scorematch-update",
       renotify: Boolean(payload.renotify),
       data: { url: payload.url || "/matches", matchId: payload.matchId },

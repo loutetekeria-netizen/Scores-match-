@@ -224,3 +224,38 @@ h1 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystem
   .team-choice { min-height: 126px; font-size: 11px; }
   .team-choice-logo { width: 52px; height: 52px; }
 }
+
+/* Brand asset supplied by the user */
+.brand-logo { width: 38px; height: 46px; object-fit: contain; border-radius: 10px; filter: drop-shadow(0 4px 8px rgba(18, 79, 37, .18)); }
+.onboarding-logo { width: 56px; height: 68px; object-fit: contain; border-radius: 15px; filter: drop-shadow(0 8px 16px rgba(18, 79, 37, .16)); }
+.team-mark img, .team-choice-logo img { width: 74%; height: 74%; object-fit: contain; display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.14)); }
+.team-mark > span, .team-choice-logo > span { line-height: 1; }
+.team-choice-logo { overflow: hidden; }
+
+/* Launch, loading, analysis, error and offline states */
+.state-screen { position: relative; isolation: isolate; display: grid; place-items: center; align-content: center; min-height: 100dvh; overflow: hidden; padding: 32px 24px; background: #f7fbf7; color: #17221c; text-align: center; }
+.dark .state-screen { background: #0c1710; color: #edf6ee; }
+.state-glow { position: absolute; z-index: -1; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(35,137,70,.18) 0%, rgba(35,137,70,0) 68%); animation: breathe 3.2s ease-in-out infinite; }
+.state-logo { width: min(170px, 46vw); height: min(205px, 54vw); object-fit: contain; margin-bottom: 12px; filter: drop-shadow(0 18px 26px rgba(17, 76, 37, .2)); animation: logo-enter .7s cubic-bezier(.2,.8,.2,1) both; }
+.state-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 8px auto 16px; border: 1px solid #cce1cf; border-radius: 50%; background: #fff; color: #238946; box-shadow: 0 10px 26px rgba(35,137,70,.12); animation: icon-pop .45s ease both; }
+.dark .state-icon { border-color: #35503c; background: #16251c; }
+.state-kicker { margin: 0 0 8px; color: #238946; font-size: 10px; font-weight: 900; letter-spacing: .16em; }
+.state-screen h1 { max-width: 360px; margin: 0; font-size: clamp(24px, 7vw, 34px); letter-spacing: -.04em; }
+.state-screen > p:not(.state-kicker) { max-width: 340px; margin: 10px 0 20px; color: #718278; font-size: 14px; line-height: 1.55; }
+.dark .state-screen > p:not(.state-kicker) { color: #a9b8ac; }
+.state-progress { width: min(220px, 70vw); height: 4px; overflow: hidden; margin-top: 16px; border-radius: 999px; background: #dfeae1; }
+.dark .state-progress { background: #253a2b; }
+.state-progress-fill { display: block; width: 42%; height: 100%; border-radius: inherit; background: #238946; animation: progress-sweep 1.35s ease-in-out infinite; }
+.state-error .state-icon { color: #b84b43; border-color: #e9c1bd; background: #fff8f7; }
+.state-offline .state-icon { color: #a9741b; border-color: #ecd7a5; background: #fffbf0; }
+.state-error .state-progress, .state-offline .state-progress { display: none; }
+.state-screen .primary-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 17px; border: 0; border-radius: 12px; background: #238946; color: #fff; font-size: 13px; font-weight: 800; box-shadow: 0 8px 18px rgba(35,137,70,.2); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.state-screen .primary-button:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(35,137,70,.26); }
+.state-screen .primary-button:active { transform: translateY(0); }
+.spin { animation: spin 1.1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes breathe { 0%, 100% { transform: scale(.92); opacity: .65; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes logo-enter { from { transform: translateY(12px) scale(.92); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes icon-pop { from { transform: scale(.75); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes progress-sweep { 0% { transform: translateX(-180%); } 55%, 100% { transform: translateX(430%); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }

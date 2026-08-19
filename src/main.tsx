@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -22,11 +22,17 @@ import {
   Bug,
   FlaskConical,
   Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  LoaderCircle,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import "./styles.css";
 import { enablePushNotifications } from "./push";
 
 type Status = "live" | "upcoming" | "finished";
+type ScreenState = "launching" | "loading" | "analyzing" | "ready" | "error" | "offline";
 type Match = {
   id: number;
   competition: string;
@@ -57,8 +63,48 @@ const matches: Match[] = [
 
 const teams = ["Paris Saint-Germain", "Real Madrid", "FC Barcelona", "Arsenal", "Liverpool", "Manchester City", "Bayern Munich", "Olympique de Marseille", "Chelsea"];
 
-function TeamMark({ short, color }: { short: string; color: string }) {
-  return <span className="team-mark" style={{ background: color }}>{short.slice(0, 3)}</span>;
+const teamLogoIds: Record<string, number> = {
+  "Paris Saint-Germain": 85,
+  "Olympique de Marseille": 81,
+  "Manchester City": 50,
+  Arsenal: 42,
+  "Real Madrid": 541,
+  "Bayern Munich": 157,
+  "FC Barcelona": 529,
+  Villarreal: 533,
+  Lyon: 80,
+  Lille: 79,
+  Liverpool: 40,
+  Chelsea: 49,
+};
+
+function TeamMark({ short, color, name, className = "team-mark" }: { short: string; color: string; name: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  const logoId = teamLogoIds[name];
+  return <span className={className} style={{ background: color }}>
+    {logoId && !failed ? <img src={`https://media.api-sports.io/football/teams/${logoId}.png`} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span>{short.slice(0, 3)}</span>}
+  </span>;
+}
+
+function LoadingScreen({ state, onRetry }: { state: Exclude<ScreenState, "ready">; onRetry: () => void }) {
+  const copy = {
+    launching: { title: "Lancement de ScoreMatch", text: "Préparation de votre espace de scores…", icon: Sparkles },
+    loading: { title: "Chargement des matchs", text: "Récupération des compétitions et des rencontres…", icon: LoaderCircle },
+    analyzing: { title: "Analyse des matchs", text: "Vérification des scores, événements et fraîcheur des données…", icon: CheckCircle2 },
+    error: { title: "Impossible de charger les scores", text: "Le service ne répond pas pour le moment. Vos données locales restent disponibles.", icon: AlertTriangle },
+    offline: { title: "Vous êtes hors connexion", text: "Nous affichons la dernière version disponible et réessaierons automatiquement.", icon: WifiOff },
+  }[state];
+  const Icon = copy.icon;
+  return <main className={`state-screen state-${state}`} role="status" aria-live="polite">
+    <div className="state-glow" aria-hidden="true" />
+    <img className="state-logo" src="/scorematch-logo.svg" alt="ScoreMatch" />
+    <div className="state-icon"><Icon size={25} className={state === "loading" || state === "launching" ? "spin" : ""} /></div>
+    <p className="state-kicker">{state === "launching" ? "BIENVENUE" : state === "analyzing" ? "MISE À JOUR INTELLIGENTE" : "SCORES EN DIRECT"}</p>
+    <h1>{copy.title}</h1>
+    <p>{copy.text}</p>
+    {(state === "error" || state === "offline") && <button className="primary-button" onClick={onRetry}><RefreshCw size={16} /> Réessayer</button>}
+    <div className="state-progress" aria-hidden="true"><span className="state-progress-fill" /></div>
+  </main>;
 }
 
 function StatusBadge({ status, minute }: { status: Status; minute?: string }) {
@@ -73,8 +119,8 @@ function MatchCard({ match, onFavorite, onOpen }: { match: Match; onFavorite: (i
         <div className="match-context"><span>{match.competition}</span><span className="context-separator">·</span><span>{match.region} · {match.phase}</span></div>
         <div className="match-body">
           <div className="teams">
-            <div className="team-row"><TeamMark short={match.homeShort} color={match.homeColor} /><span>{match.home}</span></div>
-            <div className="team-row"><TeamMark short={match.awayShort} color={match.awayColor} /><span>{match.away}</span></div>
+            <div className="team-row"><TeamMark short={match.homeShort} color={match.homeColor} name={match.home} /><span>{match.home}</span></div>
+            <div className="team-row"><TeamMark short={match.awayShort} color={match.awayColor} name={match.away} /><span>{match.away}</span></div>
           </div>
           <div className="match-score">
             <StatusBadge status={match.status} minute={match.minute} />
@@ -125,7 +171,7 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>(["Paris Saint-Germain"]);
   const filtered = teams.filter((team) => team.toLowerCase().includes(query.toLowerCase()));
-  return <div className="onboarding"><div className="onboarding-top"><span className="brand-mark">SM</span><button onClick={onDone}>Passer</button></div><div className="onboarding-intro"><Sparkles size={22} /><h1>Choisissez vos équipes préférées</h1><p>Retrouvez leurs scores et leurs prochains matchs au même endroit.</p></div><div className="team-search"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher une équipe" /></div><div className="team-grid">{filtered.map((team, index) => { const isSelected = selected.includes(team); return <button className={`team-choice ${isSelected ? "selected" : ""}`} key={team} onClick={() => setSelected(isSelected ? selected.filter((item) => item !== team) : [...selected, team])}><span className="team-choice-logo" style={{ background: ["#228b57", "#c82c42", "#d7ad27", "#3154a0"][index % 4] }}>{team.slice(0, 2).toUpperCase()}</span><span>{team}</span>{isSelected && <span className="choice-check">✓</span>}</button>; })}</div><div className="onboarding-footer"><div className="progress-dots"><span className="active" /><span /><span /></div><button className="onboarding-next" onClick={onDone} aria-label="Terminer la personnalisation"><ArrowRight size={23} /></button></div></div>;
+  return <div className="onboarding"><div className="onboarding-top"><img className="onboarding-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /><button onClick={onDone}>Passer</button></div><div className="onboarding-intro"><Sparkles size={22} /><h1>Choisissez vos équipes préférées</h1><p>Retrouvez leurs scores et leurs prochains matchs au même endroit.</p></div><div className="team-search"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher une équipe" /></div><div className="team-grid">{filtered.map((team, index) => { const isSelected = selected.includes(team); return <button className={`team-choice ${isSelected ? "selected" : ""}`} key={team} onClick={() => setSelected(isSelected ? selected.filter((item) => item !== team) : [...selected, team])}><TeamMark short={team.slice(0, 3)} color={["#228b57", "#c82c42", "#d7ad27", "#3154a0"][index % 4]} name={team} className="team-choice-logo" /><span>{team}</span>{isSelected && <span className="choice-check">✓</span>}</button>; })}</div><div className="onboarding-footer"><div className="progress-dots"><span className="active" /><span /><span /></div><button className="onboarding-next" onClick={onDone} aria-label="Terminer la personnalisation"><ArrowRight size={23} /></button></div></div>;
 }
 
 function App() {
@@ -139,6 +185,31 @@ function App() {
   const [dark, setDark] = useState(false);
   const [notification, setNotification] = useState(" ");
   const [favoriteIds, setFavoriteIds] = useState<number[]>([1]);
+  const [screenState, setScreenState] = useState<ScreenState>("launching");
+
+  useEffect(() => {
+    const forcedState = new URLSearchParams(window.location.search).get("state") as ScreenState | null;
+    if (forcedState && forcedState !== "ready") { setScreenState(forcedState); return; }
+    const go = (next: ScreenState, delay: number) => window.setTimeout(() => setScreenState(next), delay);
+    if (!navigator.onLine) setScreenState("offline");
+    const timers = [go("loading", 650), go("analyzing", 1450), go("ready", 2350)];
+    const onOffline = () => setScreenState("offline");
+    const onOnline = () => { setScreenState("analyzing"); window.setTimeout(() => setScreenState("ready"), 900); };
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
+    return () => { timers.forEach(window.clearTimeout); window.removeEventListener("offline", onOffline); window.removeEventListener("online", onOnline); };
+  }, []);
+
+  function retryLoad() {
+    setScreenState("loading");
+    window.setTimeout(() => setScreenState("analyzing"), 550);
+    window.setTimeout(() => setScreenState(navigator.onLine ? "ready" : "offline"), 1450);
+  }
+
+  function refreshScores() {
+    setScreenState("analyzing");
+    window.setTimeout(() => setScreenState(navigator.onLine ? "ready" : "offline"), 900);
+  }
 
   const visibleMatches = useMemo(() => matches.filter((match) => {
     const matchFilter = filter === "Tous" || (filter === "En direct" && match.status === "live") || (filter === "À venir" && match.status === "upcoming") || (filter === "Terminés" && match.status === "finished");
@@ -168,10 +239,11 @@ function App() {
     window.setTimeout(() => setNotification(""), 3200);
   }
 
+  if (screenState !== "ready") return <LoadingScreen state={screenState} onRetry={retryLoad} />;
   if (onboarding) return <Onboarding onDone={() => setOnboarding(false)} />;
 
   return <div className={dark ? "app dark" : "app"}>
-    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={23} /></button><button className="brand" onClick={() => setView("matches")}><span className="brand-mark">SM</span><span>Score<span>Match</span></span></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button" aria-label="Actualiser les scores" onClick={() => setNotification("Scores actualisés · il y a quelques secondes")}><Radio size={19} /></button><button className="icon-button" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button" onClick={() => setOnboarding(true)}>CM</button></div></div></header>
+    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={23} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="" /><span>Score<span>Match</span></span></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button" onClick={() => setOnboarding(true)}>CM</button></div></div></header>
     <main className="page-shell"><section className="hero-row"><div><p className="eyebrow"><span className="live-pulse" /> Scores en direct</p><h1>{view === "favorites" ? "Vos favoris" : "Les matchs d’aujourd’hui"}</h1><p className="hero-subtitle">{view === "favorites" ? "Retrouvez les équipes et matchs que vous suivez." : "2 matchs en direct · 3 rencontres à suivre"}</p></div><div className="freshness"><Clock3 size={15} /><span>Mis à jour il y a 12 s</span><button onClick={() => setDark(!dark)}>{dark ? "Clair" : "Sombre"}</button></div></section>
       <section className="date-panel"><DateStrip selected={selectedDate} onSelect={setSelectedDate} onOpenCalendar={() => setCalendarOpen(true)} /><div className="filters-row"><div className="filter-tabs">{["Tous", "En direct", "À venir", "Terminés"].map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher dans les matchs" /></label></div></section>
       <section className="live-strip"><div><Radio size={17} /><strong>En direct maintenant</strong></div><span>Suivez les moments clés en temps réel</span><button onClick={() => setFilter("En direct")}>Voir les 2 matchs <ArrowRight size={15} /></button></section>
