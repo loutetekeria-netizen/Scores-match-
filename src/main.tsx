@@ -24,6 +24,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import "./styles.css";
+import { enablePushNotifications } from "./push";
 
 type Status = "live" | "upcoming" | "finished";
 type Match = {
@@ -155,10 +156,22 @@ function App() {
 
   function openMatch(match: Match) { setNotification(`${match.home} – ${match.away} · ouverture du centre de match`); window.setTimeout(() => setNotification(""), 2200); }
 
+  async function handleNotifications() {
+    const result = await enablePushNotifications();
+    const messages = {
+      unsupported: "Les notifications push ne sont pas disponibles sur ce navigateur",
+      "permission-denied": "Autorisation refusée · activez les notifications dans les réglages",
+      "missing-vapid-key": "Configuration push manquante · ajoutez VITE_VAPID_PUBLIC_KEY",
+      failed: "Impossible d’enregistrer cet appareil pour le moment",
+    } as const;
+    setNotification(result.ok ? "Notifications activées · vous recevrez les buts" : messages[result.reason]);
+    window.setTimeout(() => setNotification(""), 3200);
+  }
+
   if (onboarding) return <Onboarding onDone={() => setOnboarding(false)} />;
 
   return <div className={dark ? "app dark" : "app"}>
-    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={23} /></button><button className="brand" onClick={() => setView("matches")}><span className="brand-mark">SM</span><span>Score<span>Match</span></span></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button" aria-label="Actualiser les scores" onClick={() => setNotification("Scores actualisés · il y a quelques secondes")}><Radio size={19} /></button><button className="icon-button" aria-label="Notifications" onClick={() => setNotification("Aucune nouvelle alerte") }><Bell size={19} /></button><button className="profile-button" onClick={() => setOnboarding(true)}>CM</button></div></div></header>
+    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={23} /></button><button className="brand" onClick={() => setView("matches")}><span className="brand-mark">SM</span><span>Score<span>Match</span></span></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button" aria-label="Actualiser les scores" onClick={() => setNotification("Scores actualisés · il y a quelques secondes")}><Radio size={19} /></button><button className="icon-button" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button" onClick={() => setOnboarding(true)}>CM</button></div></div></header>
     <main className="page-shell"><section className="hero-row"><div><p className="eyebrow"><span className="live-pulse" /> Scores en direct</p><h1>{view === "favorites" ? "Vos favoris" : "Les matchs d’aujourd’hui"}</h1><p className="hero-subtitle">{view === "favorites" ? "Retrouvez les équipes et matchs que vous suivez." : "2 matchs en direct · 3 rencontres à suivre"}</p></div><div className="freshness"><Clock3 size={15} /><span>Mis à jour il y a 12 s</span><button onClick={() => setDark(!dark)}>{dark ? "Clair" : "Sombre"}</button></div></section>
       <section className="date-panel"><DateStrip selected={selectedDate} onSelect={setSelectedDate} onOpenCalendar={() => setCalendarOpen(true)} /><div className="filters-row"><div className="filter-tabs">{["Tous", "En direct", "À venir", "Terminés"].map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher dans les matchs" /></label></div></section>
       <section className="live-strip"><div><Radio size={17} /><strong>En direct maintenant</strong></div><span>Suivez les moments clés en temps réel</span><button onClick={() => setFilter("En direct")}>Voir les 2 matchs <ArrowRight size={15} /></button></section>
