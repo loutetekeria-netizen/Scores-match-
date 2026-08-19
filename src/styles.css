@@ -259,3 +259,46 @@ h1 { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystem
 @keyframes icon-pop { from { transform: scale(.75); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes progress-sweep { 0% { transform: translateX(-180%); } 55%, 100% { transform: translateX(430%); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* Header redesign: compact green action bar + horizontal date navigation */
+.topbar { background: #2f7e20; box-shadow: 0 3px 16px rgba(24, 79, 18, .22); }
+.topbar-inner { height: 82px; max-width: 1220px; padding: 0 22px; gap: 22px; }
+.brand-logo { width: 56px; height: 67px; border-radius: 13px; }
+.brand { min-width: 56px; }
+.desktop-nav { align-self: stretch; align-items: center; }
+.topbar-actions { gap: 2px; }
+.header-calendar, .header-search { width: 48px; height: 48px; }
+.header-calendar, .header-search { color: #fff; }
+.header-calendar:hover, .header-search:hover { background: rgba(255,255,255,.14); }
+.date-area { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px 42px; align-items: stretch; gap: 0; max-width: 1220px; min-height: 62px; margin: 0 auto; padding: 0 14px; border-top: 1px solid rgba(255,255,255,.16); background: #2f7e20; }
+.date-strip { display: flex; align-items: stretch; gap: 0; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.date-strip::-webkit-scrollbar { display: none; }
+.date-item { position: relative; flex: 1 0 128px; min-height: 62px; border-radius: 0; background: transparent; color: rgba(255,255,255,.68); font-size: 13px; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; }
+.date-item:hover { color: #fff; background: rgba(255,255,255,.08); }
+.date-item.active { background: transparent; color: #fff; box-shadow: inset 0 -5px 0 #fff; }
+.date-item strong { margin-top: 0; color: inherit; font-size: inherit; }
+.round-control { align-self: center; width: 34px; height: 34px; background: transparent; color: rgba(255,255,255,.85); }
+.round-control:hover { background: rgba(255,255,255,.12); color: #fff; }
+.calendar-button { grid-column: auto; align-self: center; width: 42px; height: 42px; margin: 0; padding: 0; border-radius: 10px; color: #fff; }
+.calendar-button:hover { background: rgba(255,255,255,.12); }
+.date-panel { margin-top: 18px; }
+
+@media (max-width: 720px) {
+  .topbar-inner { height: 78px; padding: 0 12px; gap: 12px; }
+  .mobile-menu { display: inline-grid !important; width: 48px; height: 48px; }
+  .brand { flex: 1; }
+  .brand-logo { width: 54px; height: 64px; }
+  .header-secondary { display: none; }
+  .header-calendar, .header-search { width: 46px; height: 46px; }
+  .date-area { grid-template-columns: 30px minmax(0, 1fr) 30px 36px; min-height: 62px; padding: 0 3px; }
+  .date-item { flex-basis: 126px; min-height: 62px; font-size: 12px; }
+  .calendar-button { width: 36px; height: 36px; }
+  .date-panel { margin-top: 14px; }
+}
+
+@media (max-width: 390px) {
+  .topbar-inner { padding: 0 8px; gap: 7px; }
+  .brand-logo { width: 49px; height: 59px; }
+  .header-calendar, .header-search, .mobile-menu { width: 42px; height: 42px; }
+  .date-item { flex-basis: 116px; font-size: 11px; }
+}

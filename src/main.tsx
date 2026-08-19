@@ -137,12 +137,12 @@ function MatchCard({ match, onFavorite, onOpen }: { match: Match; onFavorite: (i
 }
 
 function DateStrip({ selected, onSelect, onOpenCalendar }: { selected: string; onSelect: (value: string) => void; onOpenCalendar: () => void }) {
-  const dates = ["Ven. 07", "Sam. 08", "Dim. 09", "Lun. 10"];
+  const dates = ["Jeu. 17", "Hier", "Aujourd’hui", "En direct (2)", "Demain"];
   return <div className="date-area">
-    <button className="round-control" aria-label="Date précédente"><ChevronLeft size={18} /></button>
-    <div className="date-strip">{dates.map((date) => <button key={date} className={selected === date ? "date-item active" : "date-item"} onClick={() => onSelect(date)}>{date.split(" ")[0]}<strong>{date.split(" ")[1]}</strong></button>)}</div>
-    <button className="round-control" aria-label="Date suivante"><ChevronRight size={18} /></button>
-    <button className="calendar-button" onClick={onOpenCalendar}><CalendarDays size={17} /> Choisir une date</button>
+    <button className="round-control" aria-label="Dates précédentes"><ChevronLeft size={18} /></button>
+    <nav className="date-strip" aria-label="Navigation par date">{dates.map((date) => <button key={date} className={selected === date ? "date-item active" : "date-item"} onClick={() => onSelect(date)}>{date}</button>)}</nav>
+    <button className="round-control" aria-label="Dates suivantes"><ChevronRight size={18} /></button>
+    <button className="calendar-button" onClick={onOpenCalendar} aria-label="Choisir une date"><CalendarDays size={17} /></button>
   </div>;
 }
 
@@ -211,6 +211,10 @@ function App() {
     window.setTimeout(() => setScreenState(navigator.onLine ? "ready" : "offline"), 900);
   }
 
+  function focusSearch() {
+    document.querySelector<HTMLInputElement>(".search-field input")?.focus();
+  }
+
   const visibleMatches = useMemo(() => matches.filter((match) => {
     const matchFilter = filter === "Tous" || (filter === "En direct" && match.status === "live") || (filter === "À venir" && match.status === "upcoming") || (filter === "Terminés" && match.status === "finished");
     const searchFilter = `${match.home} ${match.away} ${match.competition}`.toLowerCase().includes(query.toLowerCase());
@@ -243,9 +247,9 @@ function App() {
   if (onboarding) return <Onboarding onDone={() => setOnboarding(false)} />;
 
   return <div className={dark ? "app dark" : "app"}>
-    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={23} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="" /><span>Score<span>Match</span></span></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button" onClick={() => setOnboarding(true)}>CM</button></div></div></header>
+    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={30} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button header-calendar" aria-label="Choisir une date" onClick={() => setCalendarOpen(true)}><CalendarDays size={28} /></button><button className="icon-button header-search" aria-label="Rechercher une équipe" onClick={focusSearch}><Search size={30} /></button><button className="icon-button header-secondary" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button header-secondary" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button header-secondary" onClick={() => setOnboarding(true)}>CM</button></div></div><DateStrip selected={selectedDate} onSelect={setSelectedDate} onOpenCalendar={() => setCalendarOpen(true)} /></header>
     <main className="page-shell"><section className="hero-row"><div><p className="eyebrow"><span className="live-pulse" /> Scores en direct</p><h1>{view === "favorites" ? "Vos favoris" : "Les matchs d’aujourd’hui"}</h1><p className="hero-subtitle">{view === "favorites" ? "Retrouvez les équipes et matchs que vous suivez." : "2 matchs en direct · 3 rencontres à suivre"}</p></div><div className="freshness"><Clock3 size={15} /><span>Mis à jour il y a 12 s</span><button onClick={() => setDark(!dark)}>{dark ? "Clair" : "Sombre"}</button></div></section>
-      <section className="date-panel"><DateStrip selected={selectedDate} onSelect={setSelectedDate} onOpenCalendar={() => setCalendarOpen(true)} /><div className="filters-row"><div className="filter-tabs">{["Tous", "En direct", "À venir", "Terminés"].map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher dans les matchs" /></label></div></section>
+      <section className="date-panel"><div className="filters-row"><div className="filter-tabs">{["Tous", "En direct", "À venir", "Terminés"].map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher dans les matchs" /></label></div></section>
       <section className="live-strip"><div><Radio size={17} /><strong>En direct maintenant</strong></div><span>Suivez les moments clés en temps réel</span><button onClick={() => setFilter("En direct")}>Voir les 2 matchs <ArrowRight size={15} /></button></section>
       {visibleMatches.length === 0 ? <div className="empty-state"><Star size={27} /><h2>Aucun match dans cette sélection</h2><p>Modifiez vos filtres ou ajoutez une équipe à vos favoris.</p><button className="primary-button" onClick={() => { setFilter("Tous"); setQuery(""); }}>Voir tous les matchs</button></div> : <div className="competition-list">{Array.from(new Set(visibleMatches.map((match) => match.competition))).map((competition) => <section className="competition-group" key={competition}><div className="competition-heading"><div><span className="competition-code">{competition.slice(0, 2).toUpperCase()}</span><div><h2>{competition}</h2><p>{visibleMatches.filter((item) => item.competition === competition)[0].region} · {visibleMatches.filter((item) => item.competition === competition).length} match{visibleMatches.filter((item) => item.competition === competition).length > 1 ? "s" : ""}</p></div></div><button aria-label={`Options ${competition}`} className="more-button">···</button></div>{visibleMatches.filter((match) => match.competition === competition).map((match) => <MatchCard key={match.id} match={{ ...match, favorite: favoriteIds.includes(match.id) }} onFavorite={toggleFavorite} onOpen={openMatch} />)}</section>)}</div>}
     </main>
