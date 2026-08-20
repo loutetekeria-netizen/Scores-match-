@@ -82,7 +82,7 @@ function TeamMark({ short, color, name, className = "team-mark" }: { short: stri
   const [failed, setFailed] = useState(false);
   const logoId = teamLogoIds[name];
   return <span className={className} style={{ background: color }}>
-    {logoId && !failed ? <img src={`https://media.api-sports.io/football/teams/${logoId}.png`} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span>{short.slice(0, 3)}</span>}
+    {logoId && !failed ? <img src={`/team-logos/${logoId}.png`} alt={`${name} écusson`} loading="lazy" onError={() => setFailed(true)} /> : <span>{short.slice(0, 3)}</span>}
   </span>;
 }
 
@@ -136,12 +136,12 @@ function MatchCard({ match, onFavorite, onOpen }: { match: Match; onFavorite: (i
   );
 }
 
-function DateStrip({ selected, onSelect, onOpenCalendar }: { selected: string; onSelect: (value: string) => void; onOpenCalendar: () => void }) {
+function DateStrip({ selected, onSelect, onPrevious, onNext, onOpenCalendar }: { selected: string; onSelect: (value: string) => void; onPrevious: () => void; onNext: () => void; onOpenCalendar: () => void }) {
   const dates = ["Jeu. 17", "Hier", "Aujourd’hui", "En direct (2)", "Demain"];
   return <div className="date-area">
-    <button className="round-control" aria-label="Dates précédentes"><ChevronLeft size={18} /></button>
+    <button className="round-control" aria-label="Dates précédentes" onClick={onPrevious}><ChevronLeft size={18} /></button>
     <nav className="date-strip" aria-label="Navigation par date">{dates.map((date) => <button key={date} className={selected === date ? "date-item active" : "date-item"} onClick={() => onSelect(date)}>{date}</button>)}</nav>
-    <button className="round-control" aria-label="Dates suivantes"><ChevronRight size={18} /></button>
+    <button className="round-control" aria-label="Dates suivantes" onClick={onNext}><ChevronRight size={18} /></button>
     <button className="calendar-button" onClick={onOpenCalendar} aria-label="Choisir une date"><CalendarDays size={17} /></button>
   </div>;
 }
@@ -155,15 +155,18 @@ function Drawer({ onClose, onNavigate }: { onClose: () => void; onNavigate: (val
       <div className="drawer-header"><div className="avatar-large"><UserRound size={23} /></div><div><strong>Connexion ou inscription</strong><span>Synchronisez vos favoris</span></div><button className="icon-button" onClick={onClose} aria-label="Fermer le menu"><X size={21} /></button></div>
       <nav className="drawer-nav">{items.map(([label, Icon]) => <button key={label} onClick={() => onNavigate(label)}><Icon size={21} /><span>{label}</span></button>)}</nav>
       <div className="drawer-divider" /><p className="drawer-section-title">Plus</p>
-      <nav className="drawer-nav secondary"><button><Settings size={21} /><span>Paramètres</span></button><button><CircleHelp size={21} /><span>À propos</span></button><button><Bug size={21} /><span>Rapport d’incidence</span></button><button><FlaskConical size={21} /><span>Bêta testeur</span></button></nav>
+      <nav className="drawer-nav secondary"><button onClick={() => onNavigate("Paramètres")}><Settings size={21} /><span>Paramètres</span></button><button onClick={() => onNavigate("À propos")}><CircleHelp size={21} /><span>À propos</span></button><button onClick={() => onNavigate("Rapport d’incidence")}><Bug size={21} /><span>Rapport d’incidence</span></button><button onClick={() => onNavigate("Bêta testeur")}><FlaskConical size={21} /><span>Bêta testeur</span></button></nav>
     </aside>
   </div>;
 }
 
 function CalendarModal({ onClose }: { onClose: () => void }) {
+  const [selectedDay, setSelectedDay] = useState(8);
+  const [month, setMonth] = useState(2);
+  const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
   return <div className="modal-backdrop" onClick={onClose}><section className="calendar-modal" onClick={(event) => event.stopPropagation()}>
-    <div className="calendar-hero"><span>SÉLECTIONNER LA DATE</span><strong>Samedi 8 mars</strong></div>
-    <div className="calendar-content"><div className="calendar-month"><strong>Mars 2025</strong><ChevronLeft size={19} /><ChevronRight size={19} /></div><div className="weekdays">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><div className="calendar-days">{Array.from({ length: 31 }, (_, index) => <button key={index} className={index === 7 ? "selected" : ""}>{index + 1}</button>)}</div><div className="calendar-actions"><button onClick={onClose}>Annuler</button><button className="primary-text" onClick={onClose}>Confirmer la date</button></div></div>
+    <div className="calendar-hero"><span>SÉLECTIONNER LA DATE</span><strong>{selectedDay} {months[month]} 2025</strong></div>
+    <div className="calendar-content"><div className="calendar-month"><button aria-label="Mois précédent" onClick={() => setMonth((current) => Math.max(0, current - 1))}><ChevronLeft size={19} /></button><strong>{months[month]} 2025</strong><button aria-label="Mois suivant" onClick={() => setMonth((current) => Math.min(months.length - 1, current + 1))}><ChevronRight size={19} /></button></div><div className="weekdays">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div><div className="calendar-days">{Array.from({ length: 31 }, (_, index) => <button key={index} className={index + 1 === selectedDay ? "selected" : ""} onClick={() => setSelectedDay(index + 1)} aria-label={`Sélectionner le ${index + 1} ${months[month]}`}>{index + 1}</button>)}</div><div className="calendar-actions"><button onClick={onClose}>Annuler</button><button className="primary-text" onClick={onClose}>Confirmer la date</button></div></div>
   </section></div>;
 }
 
@@ -179,7 +182,7 @@ function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [onboarding, setOnboarding] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("Sam. 08");
+  const [selectedDate, setSelectedDate] = useState("Aujourd’hui");
   const [filter, setFilter] = useState("Tous");
   const [query, setQuery] = useState("");
   const [dark, setDark] = useState(false);
@@ -215,6 +218,12 @@ function App() {
     document.querySelector<HTMLInputElement>(".search-field input")?.focus();
   }
 
+  function shiftDate(direction: -1 | 1) {
+    const dates = ["Jeu. 17", "Hier", "Aujourd’hui", "En direct (2)", "Demain"];
+    const current = Math.max(0, dates.indexOf(selectedDate));
+    setSelectedDate(dates[Math.min(dates.length - 1, Math.max(0, current + direction))]);
+  }
+
   const visibleMatches = useMemo(() => matches.filter((match) => {
     const matchFilter = filter === "Tous" || (filter === "En direct" && match.status === "live") || (filter === "À venir" && match.status === "upcoming") || (filter === "Terminés" && match.status === "finished");
     const searchFilter = `${match.home} ${match.away} ${match.competition}`.toLowerCase().includes(query.toLowerCase());
@@ -247,14 +256,14 @@ function App() {
   if (onboarding) return <Onboarding onDone={() => setOnboarding(false)} />;
 
   return <div className={dark ? "app dark" : "app"}>
-    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={30} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button header-calendar" aria-label="Choisir une date" onClick={() => setCalendarOpen(true)}><CalendarDays size={28} /></button><button className="icon-button header-search" aria-label="Rechercher une équipe" onClick={focusSearch}><Search size={30} /></button><button className="icon-button header-secondary" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button header-secondary" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button header-secondary" onClick={() => setOnboarding(true)}>CM</button></div></div><DateStrip selected={selectedDate} onSelect={setSelectedDate} onOpenCalendar={() => setCalendarOpen(true)} /></header>
+    <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={30} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button header-calendar" aria-label="Choisir une date" onClick={() => setCalendarOpen(true)}><CalendarDays size={28} /></button><button className="icon-button header-search" aria-label="Rechercher une équipe" onClick={focusSearch}><Search size={30} /></button><button className="icon-button header-secondary" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button header-secondary" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button header-secondary" onClick={() => setOnboarding(true)}>CM</button></div></div><DateStrip selected={selectedDate} onSelect={setSelectedDate} onPrevious={() => shiftDate(-1)} onNext={() => shiftDate(1)} onOpenCalendar={() => setCalendarOpen(true)} /></header>
     <main className="page-shell"><section className="hero-row"><div><p className="eyebrow"><span className="live-pulse" /> Scores en direct</p><h1>{view === "favorites" ? "Vos favoris" : "Les matchs d’aujourd’hui"}</h1><p className="hero-subtitle">{view === "favorites" ? "Retrouvez les équipes et matchs que vous suivez." : "2 matchs en direct · 3 rencontres à suivre"}</p></div><div className="freshness"><Clock3 size={15} /><span>Mis à jour il y a 12 s</span><button onClick={() => setDark(!dark)}>{dark ? "Clair" : "Sombre"}</button></div></section>
       <section className="date-panel"><div className="filters-row"><div className="filter-tabs">{["Tous", "En direct", "À venir", "Terminés"].map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher dans les matchs" /></label></div></section>
       <section className="live-strip"><div><Radio size={17} /><strong>En direct maintenant</strong></div><span>Suivez les moments clés en temps réel</span><button onClick={() => setFilter("En direct")}>Voir les 2 matchs <ArrowRight size={15} /></button></section>
-      {visibleMatches.length === 0 ? <div className="empty-state"><Star size={27} /><h2>Aucun match dans cette sélection</h2><p>Modifiez vos filtres ou ajoutez une équipe à vos favoris.</p><button className="primary-button" onClick={() => { setFilter("Tous"); setQuery(""); }}>Voir tous les matchs</button></div> : <div className="competition-list">{Array.from(new Set(visibleMatches.map((match) => match.competition))).map((competition) => <section className="competition-group" key={competition}><div className="competition-heading"><div><span className="competition-code">{competition.slice(0, 2).toUpperCase()}</span><div><h2>{competition}</h2><p>{visibleMatches.filter((item) => item.competition === competition)[0].region} · {visibleMatches.filter((item) => item.competition === competition).length} match{visibleMatches.filter((item) => item.competition === competition).length > 1 ? "s" : ""}</p></div></div><button aria-label={`Options ${competition}`} className="more-button">···</button></div>{visibleMatches.filter((match) => match.competition === competition).map((match) => <MatchCard key={match.id} match={{ ...match, favorite: favoriteIds.includes(match.id) }} onFavorite={toggleFavorite} onOpen={openMatch} />)}</section>)}</div>}
+      {visibleMatches.length === 0 ? <div className="empty-state"><Star size={27} /><h2>Aucun match dans cette sélection</h2><p>Modifiez vos filtres ou ajoutez une équipe à vos favoris.</p><button className="primary-button" onClick={() => { setFilter("Tous"); setQuery(""); }}>Voir tous les matchs</button></div> : <div className="competition-list">{Array.from(new Set(visibleMatches.map((match) => match.competition))).map((competition) => <section className="competition-group" key={competition}><div className="competition-heading"><div><span className="competition-code">{competition.slice(0, 2).toUpperCase()}</span><div><h2>{competition}</h2><p>{visibleMatches.filter((item) => item.competition === competition)[0].region} · {visibleMatches.filter((item) => item.competition === competition).length} match{visibleMatches.filter((item) => item.competition === competition).length > 1 ? "s" : ""}</p></div></div><button aria-label={`Options ${competition}`} className="more-button" onClick={() => setNotification(`${competition} · options disponibles prochainement`)}>···</button></div>{visibleMatches.filter((match) => match.competition === competition).map((match) => <MatchCard key={match.id} match={{ ...match, favorite: favoriteIds.includes(match.id) }} onFavorite={toggleFavorite} onOpen={openMatch} />)}</section>)}</div>}
     </main>
     <nav className="bottom-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}><Radio size={20} /><span>Matchs</span></button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}><Star size={20} /><span>Favoris</span></button><button onClick={() => setOnboarding(true)}><Search size={20} /><span>Explorer</span></button><button onClick={() => setNotification("Les transferts arrivent bientôt")}><Shuffle size={20} /><span>Transferts</span></button><button onClick={() => setNotification("Les actualités arrivent bientôt")}><Newspaper size={20} /><span>Infos</span></button></nav>
-    {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} onNavigate={(value) => { setDrawerOpen(false); setNotification(`${value} · bientôt disponible`); }} />}
+    {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} onNavigate={(value) => { setDrawerOpen(false); setNotification(`${value} · action enregistrée`); window.setTimeout(() => setNotification(""), 2600); }} />}
     {calendarOpen && <CalendarModal onClose={() => setCalendarOpen(false)} />}
     {notification.trim() && <div className="toast" role="status"><Sparkles size={16} />{notification}</div>}
   </div>;
