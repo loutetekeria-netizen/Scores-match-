@@ -19,3 +19,7 @@ Le hamburger est conditionné par le breakpoint mobile ; dans le viewport de tes
 Après la dernière correction, le bouton hamburger est visible avec le libellé accessible « Ouvrir le menu » dans le viewport de production testé. L’onglet « Aujourd’hui » est actif par défaut et matérialisé par le soulignement du bandeau vert. Les écussons sont servis depuis `public/team-logos` et apparaissent dans les cartes.
 
 Le build final passe avec `pnpm run lint`, `pnpm run build` et `git diff --check`.
+
+## Vérification du panneau latéral
+
+Le panneau s’ouvre dans le build local et expose bien les dix destinations : Compétitions, Équipes, Joueurs, Transferts, Trouver un match, Télévisé, Paramètres, À propos, Rapport d’incidence et Bêta testeur. Chaque entrée possède maintenant un handler qui définit `activePanel` et rend `PanelView` au lieu d’afficher uniquement un toast.

@@ -32,6 +32,7 @@ import "./styles.css";
 import { enablePushNotifications } from "./push";
 
 type Status = "live" | "upcoming" | "finished";
+type PanelKey = "Compétitions" | "Équipes" | "Joueurs" | "Transferts" | "Trouver un match" | "Télévisé" | "Paramètres" | "À propos" | "Rapport d’incidence" | "Bêta testeur";
 type ScreenState = "launching" | "loading" | "analyzing" | "ready" | "error" | "offline";
 type Match = {
   id: number;
@@ -177,11 +178,48 @@ function Onboarding({ onDone }: { onDone: () => void }) {
   return <div className="onboarding"><div className="onboarding-top"><img className="onboarding-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /><button onClick={onDone}>Passer</button></div><div className="onboarding-intro"><Sparkles size={22} /><h1>Choisissez vos équipes préférées</h1><p>Retrouvez leurs scores et leurs prochains matchs au même endroit.</p></div><div className="team-search"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher une équipe" /></div><div className="team-grid">{filtered.map((team, index) => { const isSelected = selected.includes(team); return <button className={`team-choice ${isSelected ? "selected" : ""}`} key={team} onClick={() => setSelected(isSelected ? selected.filter((item) => item !== team) : [...selected, team])}><TeamMark short={team.slice(0, 3)} color={["#228b57", "#c82c42", "#d7ad27", "#3154a0"][index % 4]} name={team} className="team-choice-logo" /><span>{team}</span>{isSelected && <span className="choice-check">✓</span>}</button>; })}</div><div className="onboarding-footer"><div className="progress-dots"><span className="active" /><span /><span /></div><button className="onboarding-next" onClick={onDone} aria-label="Terminer la personnalisation"><ArrowRight size={23} /></button></div></div>;
 }
 
+function PanelView({ panel, onBack, onNotify }: { panel: PanelKey; onBack: () => void; onNotify: (message: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [report, setReport] = useState("");
+  const panelCopy: Record<PanelKey, { title: string; subtitle: string }> = {
+    "Compétitions": { title: "Compétitions", subtitle: "Explorez les compétitions suivies par ScoreMatch." },
+    "Équipes": { title: "Équipes", subtitle: "Suivez les équipes dont vous voulez recevoir les scores." },
+    "Joueurs": { title: "Joueurs", subtitle: "Retrouvez les joueurs associés aux matchs du jour." },
+    "Transferts": { title: "Transferts", subtitle: "Les dernières actualités de mercato seront synchronisées ici." },
+    "Trouver un match": { title: "Trouver un match", subtitle: "Recherchez une équipe, une compétition ou une rencontre." },
+    "Télévisé": { title: "Matchs télévisés", subtitle: "Identifiez rapidement les rencontres diffusées aujourd’hui." },
+    "Paramètres": { title: "Paramètres", subtitle: "Personnalisez vos alertes et votre expérience ScoreMatch." },
+    "À propos": { title: "À propos de ScoreMatch", subtitle: "Une expérience claire pour suivre les scores de football." },
+    "Rapport d’incidence": { title: "Rapporter une incidence", subtitle: "Aidez-nous à corriger une donnée ou un problème d’interface." },
+    "Bêta testeur": { title: "Programme bêta", subtitle: "Testez les nouvelles fonctionnalités avant leur publication." },
+  };
+  const icons = { "Compétitions": Trophy, "Équipes": UsersRound, "Joueurs": UserRound, "Transferts": Shuffle, "Trouver un match": Search, "Télévisé": Tv, "Paramètres": Settings, "À propos": CircleHelp, "Rapport d’incidence": Bug, "Bêta testeur": FlaskConical };
+  const Icon = icons[panel];
+  const competitions = ["Ligue 1", "Premier League", "Liga", "Ligue des champions"];
+  const players = ["Ousmane Dembélé", "Erling Haaland", "Kylian Mbappé", "Harry Kane"];
+  const searchMatches = matches.filter((match) => `${match.home} ${match.away} ${match.competition}`.toLowerCase().includes(search.toLowerCase()));
+  return <section className="panel-view">
+    <button className="panel-back" onClick={onBack}><ChevronLeft size={17} /> Retour aux matchs</button>
+    <div className="panel-heading"><span className="panel-heading-icon"><Icon size={22} /></span><div><p className="eyebrow">ESPACE SCOREMATCH</p><h1>{panelCopy[panel].title}</h1><p>{panelCopy[panel].subtitle}</p></div></div>
+    {panel === "Compétitions" && <div className="panel-grid">{competitions.map((item) => <button className="panel-card" key={item} onClick={() => onNotify(`${item} sélectionnée`)}><Trophy size={20} /><strong>{item}</strong><span>Voir les matchs et classements</span><ArrowRight size={16} /></button>)}</div>}
+    {panel === "Équipes" && <div className="panel-grid">{teams.map((team) => <button className="panel-card panel-team-card" key={team} onClick={() => onNotify(`${team} ajoutée à vos favoris`)}><TeamMark short={team.slice(0, 3)} color="#238946" name={team} className="team-mark" /><span><strong>{team}</strong><small>Suivre les scores</small></span><Star size={17} /></button>)}</div>}
+    {panel === "Joueurs" && <div className="panel-grid">{players.map((player) => <div className="panel-card panel-static-card" key={player}><UserRound size={20} /><span><strong>{player}</strong><small>Statistiques et matchs récents</small></span></div>)}</div>}
+    {panel === "Trouver un match" && <div className="panel-search"><label className="search-field"><Search size={17} /><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher une équipe ou un match" aria-label="Rechercher une équipe ou un match" /></label><div className="panel-results">{searchMatches.map((match) => <button className="panel-result" key={match.id} onClick={() => onNotify(`${match.home} – ${match.away} sélectionné`)}><span>{match.home} – {match.away}</span><small>{match.competition}</small><ArrowRight size={16} /></button>)}</div></div>}
+    {panel === "Télévisé" && <div className="panel-grid">{matches.slice(0, 3).map((match) => <button className="panel-card" key={match.id} onClick={() => onNotify(`${match.home} – ${match.away} ouvert`)}><Tv size={20} /><span><strong>{match.home} – {match.away}</strong><small>Canal à confirmer · {match.kickoff ?? "En direct"}</small></span><ArrowRight size={16} /></button>)}</div>}
+    {panel === "Transferts" && <div className="panel-empty"><Shuffle size={28} /><h2>Les transferts arrivent bientôt</h2><p>Cette vue est prête à recevoir les données du fournisseur sportif.</p><button className="primary-button" onClick={() => onNotify("Synchronisation des transferts demandée")}>Demander une synchronisation</button></div>}
+    {panel === "Paramètres" && <div className="settings-list"><label><span><strong>Alertes de buts</strong><small>Recevoir une notification pour les équipes suivies</small></span><input type="checkbox" defaultChecked /></label><label><span><strong>Actualisation automatique</strong><small>Actualiser les scores en direct</small></span><input type="checkbox" defaultChecked /></label><button className="primary-button" onClick={() => onNotify("Paramètres enregistrés")}>Enregistrer les paramètres</button></div>}
+    {panel === "À propos" && <div className="panel-empty"><img className="panel-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /><h2>ScoreMatch</h2><p>Version 0.1 · Une PWA de scores conçue pour retrouver les matchs importants en quelques secondes.</p></div>}
+    {panel === "Rapport d’incidence" && <form className="report-form" onSubmit={(event) => { event.preventDefault(); onNotify(report.trim() ? "Merci, votre rapport a été enregistré" : "Décrivez l’incidence avant d’envoyer le rapport"); if (report.trim()) setReport(""); }}><label htmlFor="incident">Décrivez le problème</label><textarea id="incident" value={report} onChange={(event) => setReport(event.target.value)} placeholder="Ex. score incorrect, écusson absent, bouton inactif…" /><button className="primary-button" type="submit">Envoyer le rapport</button></form>}
+    {panel === "Bêta testeur" && <div className="panel-empty"><FlaskConical size={30} /><h2>Rejoindre la bêta</h2><p>Recevez les nouvelles vues et partagez vos retours avant la mise en production.</p><button className="primary-button" onClick={() => onNotify("Votre demande de bêta a été enregistrée")}>Rejoindre le programme</button></div>}
+  </section>;
+}
+
 function App() {
   const [view, setView] = useState("matches");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [onboarding, setOnboarding] = useState(false);
+  const [activePanel, setActivePanel] = useState<PanelKey | null>(null);
   const [selectedDate, setSelectedDate] = useState("Aujourd’hui");
   const [filter, setFilter] = useState("Tous");
   const [query, setQuery] = useState("");
@@ -254,6 +292,7 @@ function App() {
 
   if (screenState !== "ready") return <LoadingScreen state={screenState} onRetry={retryLoad} />;
   if (onboarding) return <Onboarding onDone={() => setOnboarding(false)} />;
+  if (activePanel) return <div className={dark ? "app dark" : "app"}><main className="page-shell"><PanelView panel={activePanel} onBack={() => setActivePanel(null)} onNotify={(message) => { setNotification(message); window.setTimeout(() => setNotification(""), 2600); }} /></main>{notification.trim() && <div className="toast" role="status"><Sparkles size={16} />{notification}</div>}</div>;
 
   return <div className={dark ? "app dark" : "app"}>
     <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={30} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button header-calendar" aria-label="Choisir une date" onClick={() => setCalendarOpen(true)}><CalendarDays size={28} /></button><button className="icon-button header-search" aria-label="Rechercher une équipe" onClick={focusSearch}><Search size={30} /></button><button className="icon-button header-secondary" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button header-secondary" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button header-secondary" onClick={() => setOnboarding(true)}>CM</button></div></div><DateStrip selected={selectedDate} onSelect={setSelectedDate} onPrevious={() => shiftDate(-1)} onNext={() => shiftDate(1)} onOpenCalendar={() => setCalendarOpen(true)} /></header>
@@ -263,7 +302,7 @@ function App() {
       {visibleMatches.length === 0 ? <div className="empty-state"><Star size={27} /><h2>Aucun match dans cette sélection</h2><p>Modifiez vos filtres ou ajoutez une équipe à vos favoris.</p><button className="primary-button" onClick={() => { setFilter("Tous"); setQuery(""); }}>Voir tous les matchs</button></div> : <div className="competition-list">{Array.from(new Set(visibleMatches.map((match) => match.competition))).map((competition) => <section className="competition-group" key={competition}><div className="competition-heading"><div><span className="competition-code">{competition.slice(0, 2).toUpperCase()}</span><div><h2>{competition}</h2><p>{visibleMatches.filter((item) => item.competition === competition)[0].region} · {visibleMatches.filter((item) => item.competition === competition).length} match{visibleMatches.filter((item) => item.competition === competition).length > 1 ? "s" : ""}</p></div></div><button aria-label={`Options ${competition}`} className="more-button" onClick={() => setNotification(`${competition} · options disponibles prochainement`)}>···</button></div>{visibleMatches.filter((match) => match.competition === competition).map((match) => <MatchCard key={match.id} match={{ ...match, favorite: favoriteIds.includes(match.id) }} onFavorite={toggleFavorite} onOpen={openMatch} />)}</section>)}</div>}
     </main>
     <nav className="bottom-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}><Radio size={20} /><span>Matchs</span></button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}><Star size={20} /><span>Favoris</span></button><button onClick={() => setOnboarding(true)}><Search size={20} /><span>Explorer</span></button><button onClick={() => setNotification("Les transferts arrivent bientôt")}><Shuffle size={20} /><span>Transferts</span></button><button onClick={() => setNotification("Les actualités arrivent bientôt")}><Newspaper size={20} /><span>Infos</span></button></nav>
-    {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} onNavigate={(value) => { setDrawerOpen(false); setNotification(`${value} · action enregistrée`); window.setTimeout(() => setNotification(""), 2600); }} />}
+    {drawerOpen && <Drawer onClose={() => setDrawerOpen(false)} onNavigate={(value) => { setDrawerOpen(false); setActivePanel(value as PanelKey); }} />}
     {calendarOpen && <CalendarModal onClose={() => setCalendarOpen(false)} />}
     {notification.trim() && <div className="toast" role="status"><Sparkles size={16} />{notification}</div>}
   </div>;
