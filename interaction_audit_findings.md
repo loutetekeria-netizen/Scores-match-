@@ -23,3 +23,11 @@ Le build final passe avec `pnpm run lint`, `pnpm run build` et `git diff --check
 ## Vérification du panneau latéral
 
 Le panneau s’ouvre dans le build local et expose bien les dix destinations : Compétitions, Équipes, Joueurs, Transferts, Trouver un match, Télévisé, Paramètres, À propos, Rapport d’incidence et Bêta testeur. Chaque entrée possède maintenant un handler qui définit `activePanel` et rend `PanelView` au lieu d’afficher uniquement un toast.
+
+## Barre mobile — test complémentaire
+
+L’onglet `Transferts` ouvre une vue interne dédiée avec titre, description, état vide explicite et bouton « Demander une synchronisation ». Il ne déclenche plus uniquement un toast.
+
+## Barre mobile — validation Infos
+
+L’onglet `Infos` ouvre la vue interne « Actualités du football » et affiche une carte pour chaque match avec l’événement associé lorsqu’il existe. Chaque carte est interactive et fournit un retour utilisateur. L’écran possède également un bouton « Retour aux matchs ».
