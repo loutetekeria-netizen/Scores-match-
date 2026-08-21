@@ -66,7 +66,16 @@ const matches: Match[] = [
   { id: 5, competition: "Ligue 1", region: "France", phase: "Journée 25", home: "Lyon", away: "Lille", homeShort: "OL", awayShort: "LIL", homeColor: "#3154a0", awayColor: "#d33a44", kickoff: "22:00", status: "upcoming" },
 ];
 
-const teams = ["Paris Saint-Germain", "Real Madrid", "FC Barcelona", "Arsenal", "Liverpool", "Manchester City", "Bayern Munich", "Olympique de Marseille", "Chelsea"];
+const teams = [
+  "Paris Saint-Germain", "Olympique de Marseille", "Lyon", "Lille", "Monaco",
+  "Real Madrid", "FC Barcelona", "Atlético de Madrid", "Sevilla", "Valencia",
+  "Arsenal", "Liverpool", "Manchester City", "Chelsea", "Manchester United", "Tottenham", "Newcastle",
+  "Bayern Munich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig",
+  "Inter Milan", "AC Milan", "Napoli", "AS Roma", "Juventus",
+  "Benfica", "FC Porto", "Ajax", "PSV Eindhoven",
+  "Flamengo", "Palmeiras", "Corinthians", "São Paulo",
+  "Al Hilal", "Al Nassr", "Galatasaray", "Fenerbahçe", "Celtic", "Rangers",
+];
 
 const teamLogoIds: Record<string, number> = {
   "Paris Saint-Germain": 85,
@@ -178,8 +187,9 @@ function CalendarModal({ onClose }: { onClose: () => void }) {
 function Onboarding({ onDone }: { onDone: () => void }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string[]>(["Paris Saint-Germain"]);
-  const filtered = teams.filter((team) => team.toLowerCase().includes(query.toLowerCase()));
-  return <div className="onboarding"><div className="onboarding-top"><img className="onboarding-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /><button onClick={onDone}>Passer</button></div><div className="onboarding-intro"><Sparkles size={22} /><h1>Choisissez vos équipes préférées</h1><p>Retrouvez leurs scores et leurs prochains matchs au même endroit.</p></div><div className="team-search"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher une équipe" /></div><div className="team-grid">{filtered.map((team, index) => { const isSelected = selected.includes(team); return <button className={`team-choice ${isSelected ? "selected" : ""}`} key={team} onClick={() => setSelected(isSelected ? selected.filter((item) => item !== team) : [...selected, team])}><TeamMark short={team.slice(0, 3)} color={["#228b57", "#c82c42", "#d7ad27", "#3154a0"][index % 4]} name={team} className="team-choice-logo" /><span>{team}</span>{isSelected && <span className="choice-check">✓</span>}</button>; })}</div><div className="onboarding-footer"><div className="progress-dots"><span className="active" /><span /><span /></div><button className="onboarding-next" onClick={onDone} aria-label="Terminer la personnalisation"><ArrowRight size={23} /></button></div></div>;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = teams.filter((team) => team.toLowerCase().includes(normalizedQuery));
+  return <div className="onboarding"><div className="onboarding-top"><img className="onboarding-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /><button onClick={onDone}>Passer</button></div><div className="onboarding-intro"><Sparkles size={22} /><h1>Choisissez vos équipes préférées</h1><p>Retrouvez leurs scores et leurs prochains matchs au même endroit.</p></div><div className="team-search"><Search size={20} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher une équipe" aria-label="Rechercher une équipe" autoComplete="off" /><span className="team-search-count" aria-live="polite">{filtered.length}</span></div><p className="team-results-label">{normalizedQuery ? `${filtered.length} équipe${filtered.length > 1 ? "s" : ""} trouvée${filtered.length > 1 ? "s" : ""}` : `${teams.length} équipes disponibles`}</p><div className="team-grid">{filtered.length ? filtered.map((team, index) => { const isSelected = selected.includes(team); return <button className={`team-choice ${isSelected ? "selected" : ""}`} key={team} onClick={() => setSelected(isSelected ? selected.filter((item) => item !== team) : [...selected, team])} aria-pressed={isSelected}><TeamMark short={team.slice(0, 3)} color={["#228b57", "#c82c42", "#d7ad27", "#3154a0"][index % 4]} name={team} className="team-choice-logo" /><span>{team}</span>{isSelected && <span className="choice-check">✓</span>}</button>; }) : <div className="team-empty"><Search size={20} /><strong>Aucune équipe trouvée</strong><span>Essayez un autre nom ou une autre orthographe.</span></div>}</div><div className="onboarding-footer"><div className="progress-dots"><span className="active" /><span /><span /></div><button className="onboarding-next" onClick={onDone} aria-label="Terminer la personnalisation"><ArrowRight size={23} /></button></div></div>;
 }
 
 function PanelView({ panel, onBack, onNotify }: { panel: PanelKey; onBack: () => void; onNotify: (message: string) => void }) {
