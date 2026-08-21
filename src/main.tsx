@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import { enablePushNotifications } from "./push";
+import { fetchMatchDetail, fetchMatches, hasLiveApi, type ApiMatch, type ApiMatchEvent } from "./scoresApi";
 
 type Status = "live" | "upcoming" | "finished";
 type PanelKey = "Compétitions" | "Équipes" | "Joueurs" | "Transferts" | "Trouver un match" | "Télévisé" | "Paramètres" | "À propos" | "Rapport d’incidence" | "Bêta testeur";
@@ -52,6 +53,9 @@ type Match = {
   status: Status;
   event?: string;
   favorite?: boolean;
+  events?: ApiMatchEvent[];
+  news?: ApiMatch["news"];
+  updatedAt?: string;
 };
 
 const matches: Match[] = [
@@ -214,6 +218,11 @@ function PanelView({ panel, onBack, onNotify }: { panel: PanelKey; onBack: () =>
   </section>;
 }
 
+function normalizeApiMatch(remote: ApiMatch): Match {
+  const local = matches.find((item) => item.id === remote.id);
+  return { ...local, ...remote, homeColor: remote.homeColor ?? local?.homeColor ?? "#238946", awayColor: remote.awayColor ?? local?.awayColor ?? "#238946" } as Match;
+}
+
 function App() {
   const [view, setView] = useState("matches");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -227,6 +236,8 @@ function App() {
   const [notification, setNotification] = useState(" ");
   const [favoriteIds, setFavoriteIds] = useState<number[]>([1]);
   const [screenState, setScreenState] = useState<ScreenState>("launching");
+  const [apiMatches, setApiMatches] = useState<Match[]>(matches);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   useEffect(() => {
     const forcedState = new URLSearchParams(window.location.search).get("state") as ScreenState | null;
@@ -247,8 +258,27 @@ function App() {
     window.setTimeout(() => setScreenState(navigator.onLine ? "ready" : "offline"), 1450);
   }
 
+  async function loadLiveMatches() {
+    if (!hasLiveApi() || !navigator.onLine) return;
+    const controller = new AbortController();
+    try {
+      const remote = await fetchMatches(selectedDate, controller.signal);
+      setApiMatches(remote.map(normalizeApiMatch));
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") setScreenState("error");
+    }
+  }
+
+  useEffect(() => {
+    if (screenState !== "ready" || !hasLiveApi()) return;
+    void loadLiveMatches();
+    const timer = window.setInterval(() => { void loadLiveMatches(); }, 15000);
+    return () => window.clearInterval(timer);
+  }, [screenState, selectedDate]);
+
   function refreshScores() {
     setScreenState("analyzing");
+    void loadLiveMatches();
     window.setTimeout(() => setScreenState(navigator.onLine ? "ready" : "offline"), 900);
   }
 
@@ -262,7 +292,7 @@ function App() {
     setSelectedDate(dates[Math.min(dates.length - 1, Math.max(0, current + direction))]);
   }
 
-  const visibleMatches = useMemo(() => matches.filter((match) => {
+  const visibleMatches = useMemo(() => apiMatches.filter((match) => {
     const matchFilter = filter === "Tous" || (filter === "En direct" && match.status === "live") || (filter === "À venir" && match.status === "upcoming") || (filter === "Terminés" && match.status === "finished");
     const searchFilter = `${match.home} ${match.away} ${match.competition}`.toLowerCase().includes(query.toLowerCase());
     const favoriteFilter = view === "favorites" ? favoriteIds.includes(match.id) : true;
@@ -276,7 +306,7 @@ function App() {
     window.setTimeout(() => setNotification(""), 2600);
   }
 
-  function openMatch(match: Match) { setNotification(`${match.home} – ${match.away} · ouverture du centre de match`); window.setTimeout(() => setNotification(""), 2200); }
+  function openMatch(match: Match) { setSelectedMatch(match); }
 
   async function handleNotifications() {
     const result = await enablePushNotifications();
@@ -293,6 +323,7 @@ function App() {
   if (screenState !== "ready") return <LoadingScreen state={screenState} onRetry={retryLoad} />;
   if (onboarding) return <Onboarding onDone={() => setOnboarding(false)} />;
   if (activePanel) return <div className={dark ? "app dark" : "app"}><main className="page-shell"><PanelView panel={activePanel} onBack={() => setActivePanel(null)} onNotify={(message) => { setNotification(message); window.setTimeout(() => setNotification(""), 2600); }} /></main>{notification.trim() && <div className="toast" role="status"><Sparkles size={16} />{notification}</div>}</div>;
+  if (selectedMatch) return <div className={dark ? "app dark" : "app"}><main className="page-shell"><MatchDetail match={selectedMatch} onBack={() => setSelectedMatch(null)} /></main></div>;
 
   return <div className={dark ? "app dark" : "app"}>
     <header className="topbar"><div className="topbar-inner"><button className="mobile-menu icon-button" onClick={() => setDrawerOpen(true)} aria-label="Ouvrir le menu"><Menu size={30} /></button><button className="brand" onClick={() => setView("matches")}><img className="brand-logo" src="/scorematch-logo.svg" alt="ScoreMatch" /></button><nav className="desktop-nav"><button className={view === "matches" ? "active" : ""} onClick={() => setView("matches")}>Matchs</button><button className={view === "favorites" ? "active" : ""} onClick={() => setView("favorites")}>Favoris</button><button onClick={() => setOnboarding(true)}>Équipes</button></nav><div className="topbar-actions"><button className="icon-button header-calendar" aria-label="Choisir une date" onClick={() => setCalendarOpen(true)}><CalendarDays size={28} /></button><button className="icon-button header-search" aria-label="Rechercher une équipe" onClick={focusSearch}><Search size={30} /></button><button className="icon-button header-secondary" aria-label="Actualiser les scores" onClick={refreshScores}><Radio size={19} /></button><button className="icon-button header-secondary" aria-label="Activer les notifications pour les buts" onClick={handleNotifications}><Bell size={19} /></button><button className="profile-button header-secondary" onClick={() => setOnboarding(true)}>CM</button></div></div><DateStrip selected={selectedDate} onSelect={setSelectedDate} onPrevious={() => shiftDate(-1)} onNext={() => shiftDate(1)} onOpenCalendar={() => setCalendarOpen(true)} /></header>
@@ -314,3 +345,29 @@ if ("serviceWorker" in navigator) window.addEventListener("load", () => navigato
 
 import { createRoot } from "react-dom/client";
 createRoot(document.getElementById("root")!).render(<App />);
+
+function MatchDetail({ match, onBack }: { match: Match; onBack: () => void }) {
+  const [detail, setDetail] = useState<Match>(match);
+  const [state, setState] = useState<"loading" | "ready" | "error">(hasLiveApi() ? "loading" : "ready");
+
+  useEffect(() => {
+    if (!hasLiveApi()) return;
+    const controller = new AbortController();
+    fetchMatchDetail(match.id, controller.signal)
+      .then((remote) => setDetail({ ...match, ...remote }))
+      .then(() => setState("ready"))
+      .catch((error) => { if (error.name !== "AbortError") setState("error"); })
+      .finally(() => setState((current) => current === "loading" ? "ready" : current));
+    return () => controller.abort();
+  }, [match]);
+
+  const events = detail.events ?? [];
+  const news = detail.news ?? [];
+  return <section className="match-detail">
+    <button className="panel-back" onClick={onBack}><ChevronLeft size={17} /> Retour aux matchs</button>
+    <div className="detail-hero"><p className="eyebrow">{detail.competition} · {detail.region}</p><div className="detail-teams"><div><TeamMark short={detail.homeShort} color={detail.homeColor ?? "#238946"} name={detail.home} className="detail-team-logo" /><strong>{detail.home}</strong></div><div className="detail-score"><StatusBadge status={detail.status} minute={detail.minute} /><b>{detail.status === "upcoming" ? detail.kickoff : `${detail.homeScore ?? "–"} : ${detail.awayScore ?? "–"}`}</b><small>{detail.phase}</small></div><div><TeamMark short={detail.awayShort} color={detail.awayColor ?? "#238946"} name={detail.away} className="detail-team-logo" /><strong>{detail.away}</strong></div></div></div>
+    {state === "loading" && <div className="detail-state"><LoaderCircle className="spin" size={20} /> Actualisation des événements…</div>}
+    {state === "error" && <div className="detail-state error"><AlertTriangle size={20} /> Les événements détaillés sont momentanément indisponibles.</div>}
+    <div className="detail-grid"><section className="detail-panel"><div className="detail-panel-title"><Radio size={17} /><h2>Événements du match</h2></div>{events.length ? <div className="timeline">{events.map((event) => <div className="timeline-item" key={event.id}><strong>{event.minute ? `${event.minute}’` : "—"}</strong><span><b>{event.type === "goal" ? "But" : event.type === "card" ? "Carton" : event.type === "substitution" ? "Remplacement" : "Événement"}</b>{event.player && ` · ${event.player}`}{event.assist && ` · passe de ${event.assist}`}</span></div>)}</div> : <p className="detail-empty">Les événements apparaîtront ici dès que le fournisseur les aura confirmés.</p>}</section><section className="detail-panel"><div className="detail-panel-title"><Newspaper size={17} /><h2>Actualité du match</h2></div>{news.length ? <div className="news-list">{news.map((item) => <a className="news-item" key={item.id} href={item.url ?? "#"} target={item.url ? "_blank" : undefined} rel={item.url ? "noreferrer" : undefined}><strong>{item.title}</strong><small>{item.source ?? "Source sportive"}{item.publishedAt ? ` · ${new Date(item.publishedAt).toLocaleString("fr-FR")}` : ""}</small>{item.summary && <span>{item.summary}</span>}</a>)}</div> : <p className="detail-empty">Aucune actualité associée à cette rencontre pour le moment.</p>}</section></div>
+  </section>;
+}

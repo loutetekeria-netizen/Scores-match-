@@ -143,3 +143,20 @@ L’audit initial est documenté dans [`SECURITY_AUDIT.md`](./SECURITY_AUDIT.md)
 [1]: https://www.api-football.com/coverage — Couverture publique API-Football.
 
 [2]: https://www.sportmonks.com/football-api/coverage/ — Couverture publique Sportmonks et fonctionnalités par compétition.
+
+## API réelle et centre du match
+
+Le client `src/scoresApi.ts` appelle le backend via `VITE_API_BASE_URL`. Sans cette variable, la PWA conserve les données de démonstration. Lorsque l’URL est définie, elle appelle `GET /api/scores?date=...` et actualise les scores toutes les 15 secondes, puis appelle `GET /api/matches/:id` à l’ouverture d’une rencontre pour afficher les événements réels et les actualités retournées par le backend.
+
+Un adaptateur Sportmonks et un serveur Express sont maintenant présents dans `server/`. Ils exposent `/health`, `/api/scores` et `/api/matches/:id`. Configurez le serveur ainsi :
+
+```bash
+cp .env.example .env
+# renseigner SPORTMONKS_API_TOKEN côté serveur
+pnpm install --ignore-scripts
+pnpm server:dev
+```
+
+Lancez le frontend séparément avec `pnpm dev`, puis définissez `VITE_API_BASE_URL=http://localhost:4310` dans l’environnement Vite. Le backend normalise les participants, scores, statuts et événements du fournisseur. Le type `news` est prévu dans le contrat normalisé ; Sportmonks ne fournit pas automatiquement un flux éditorial universel, donc les actualités restent vides tant qu’un flux de nouvelles autorisé n’est pas connecté.
+
+Le token sportif doit rester exclusivement côté serveur. En production, utilisez HTTPS, une base de données pour mettre en cache les fixtures et les événements, un worker persistant pour les livescores et une file de traitement pour les notifications. Le frontend ne doit jamais appeler Sportmonks directement.
