@@ -31,3 +31,9 @@ L’onglet `Transferts` ouvre une vue interne dédiée avec titre, description, 
 ## Barre mobile — validation Infos
 
 L’onglet `Infos` ouvre la vue interne « Actualités du football » et affiche une carte pour chaque match avec l’événement associé lorsqu’il existe. Chaque carte est interactive et fournit un retour utilisateur. L’écran possède également un bouton « Retour aux matchs ».
+
+## Refonte Explorer et Transferts — validation
+
+La vue `Explorer` affiche désormais les onglets Pays/Compétitions, une recherche de pays, cinq pays présentés et une liste complète filtrable avec nombre de compétitions.
+
+La vue `Transferts` affiche les onglets Dernières/Compétitions, les contrôles Mes favoris et Filtres, la bascule Officiels/Rumeurs, une liste datée de mouvements et le bouton Actualiser les transferts. La barre mobile reste visible dans les deux vues.
