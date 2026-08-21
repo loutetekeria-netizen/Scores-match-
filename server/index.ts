@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { getMatch, getMatches } from "./sportmonks.js";
+import { getFromApiFootball, getFromFootballData } from "./providers.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -21,7 +22,8 @@ app.get("/health", (_req, res) => res.json({ ok: true, provider: process.env.SPO
 app.get("/api/scores", async (req, res) => {
   const date = z.string().max(40).default("Aujourd’hui").parse(req.query.date ?? "Aujourd’hui");
   try {
-    const data = await getMatches(date);
+    const provider = process.env.SCORES_PROVIDER ?? "sportmonks";
+    const data = provider === "api-football" ? await getFromApiFootball(date) : provider === "football-data" ? await getFromFootballData(date) : await getMatches(date);
     res.setHeader("Cache-Control", date === "Aujourd’hui" || date === "En direct (2)" ? "public, max-age=5, stale-while-revalidate=15" : "public, max-age=60");
     return res.json({ data, updatedAt: new Date().toISOString() });
   } catch (error) {
@@ -33,7 +35,9 @@ app.get("/api/scores", async (req, res) => {
 app.get("/api/matches/:id", async (req, res) => {
   const id = z.coerce.number().int().positive().parse(req.params.id);
   try {
-    const data = await getMatch(id);
+    const provider = process.env.SCORES_PROVIDER ?? "sportmonks";
+    const data = provider === "api-football" ? (await getFromApiFootball(new Date().toISOString().slice(0, 10))).find((match) => match.id === id) : provider === "football-data" ? (await getFromFootballData(new Date().toISOString().slice(0, 10))).find((match) => match.id === id) : await getMatch(id);
+    if (!data) return res.status(404).json({ error: "match_not_found" });
     return res.json({ data });
   } catch (error) {
     console.error("match_error", error instanceof Error ? error.message : "unknown");
