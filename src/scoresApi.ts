@@ -18,6 +18,16 @@ export type ApiMatchNews = {
   source?: string;
 };
 
+export type ApiTransfer = {
+  playerId: number;
+  player: string;
+  photo?: string;
+  date?: string;
+  type?: string;
+  from?: { id?: number; name?: string; logo?: string };
+  to?: { id?: number; name?: string; logo?: string };
+};
+
 export type ApiMatch = {
   id: number;
   competition: string;
@@ -63,5 +73,14 @@ export async function fetchMatches(date: string, signal?: AbortSignal): Promise<
 
 export async function fetchMatchDetail(id: number, signal?: AbortSignal): Promise<ApiMatch> {
   const payload = await request<{ data: ApiMatch }>(`/api/matches/${id}`, signal);
+  return payload.data;
+}
+
+export async function fetchTransfers(filters: { team?: number; player?: number } = {}, signal?: AbortSignal): Promise<ApiTransfer[]> {
+  const params = new URLSearchParams();
+  if (filters.team) params.set("team", String(filters.team));
+  if (filters.player) params.set("player", String(filters.player));
+  const query = params.toString();
+  const payload = await request<{ data: ApiTransfer[] }>(`/api/transfers${query ? `?${query}` : ""}`, signal);
   return payload.data;
 }

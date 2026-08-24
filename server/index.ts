@@ -5,7 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { getMatch, getMatches } from "./sportmonks.js";
-import { getFromApiFootball, getFromFootballData } from "./providers.js";
+import { getFromApiFootball, getFromFootballData, getTransfersFromApiFootball } from "./providers.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -29,6 +29,21 @@ app.get("/api/scores", async (req, res) => {
   } catch (error) {
     console.error("scores_error", error instanceof Error ? error.message : "unknown");
     return res.status(502).json({ error: "scores_provider_unavailable" });
+  }
+});
+
+app.get("/api/transfers", async (req, res) => {
+  const query = z.object({ team: z.coerce.number().int().positive().optional(), player: z.coerce.number().int().positive().optional() }).parse(req.query);
+  try {
+    const provider = process.env.SCORES_PROVIDER ?? "sportmonks";
+    if (provider !== "api-football") return res.status(501).json({ error: "transfers_provider_not_supported", provider });
+    const data = await getTransfersFromApiFootball(query);
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=900");
+    return res.json({ data, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("transfers_error", error instanceof Error ? error.message : "unknown");
+    const message = error instanceof Error && error.message === "A team or player filter is required" ? "transfer_filter_required" : "transfers_provider_unavailable";
+    return res.status(message === "transfer_filter_required" ? 400 : 502).json({ error: message });
   }
 });
 

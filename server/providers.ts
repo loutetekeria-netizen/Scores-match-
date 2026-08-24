@@ -56,6 +56,34 @@ export async function getFromApiFootball(date?: string): Promise<NormalizedMatch
   });
 }
 
+export type NormalizedTransfer = {
+  playerId: number;
+  player: string;
+  photo?: string;
+  date?: string;
+  type?: string;
+  from?: { id?: number; name?: string; logo?: string };
+  to?: { id?: number; name?: string; logo?: string };
+};
+
+export async function getTransfersFromApiFootball(filters: { team?: number; player?: number }): Promise<NormalizedTransfer[]> {
+  if (!process.env.API_FOOTBALL_KEY) throw new Error("API_FOOTBALL_KEY is missing");
+  if (!filters.team && !filters.player) throw new Error("A team or player filter is required");
+  const url = new URL("https://v3.football.api-sports.io/transfers");
+  if (filters.team) url.searchParams.set("team", String(filters.team));
+  if (filters.player) url.searchParams.set("player", String(filters.player));
+  const result = await json(url, { "x-apisports-key": process.env.API_FOOTBALL_KEY });
+  return (result.response ?? []).flatMap((entry: any) => (entry.transfers ?? []).map((transfer: any) => ({
+    playerId: Number(entry.player?.id),
+    player: entry.player?.name ?? "Joueur inconnu",
+    photo: entry.player?.photo,
+    date: transfer.date,
+    type: transfer.type,
+    from: transfer.teams?.out ? { id: transfer.teams.out.id, name: transfer.teams.out.name, logo: transfer.teams.out.logo } : undefined,
+    to: transfer.teams?.in ? { id: transfer.teams.in.id, name: transfer.teams.in.name, logo: transfer.teams.in.logo } : undefined,
+  } satisfies NormalizedTransfer)));
+}
+
 export async function getFromFootballData(date?: string): Promise<NormalizedMatch[]> {
   const footballDataToken = process.env.FOOTBALL_DATA_TOKEN;
   if (!footballDataToken) throw new Error("FOOTBALL_DATA_TOKEN is missing");
