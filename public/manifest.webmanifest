@@ -2,7 +2,7 @@
   "name": "ScoreMatch — Scores en direct",
   "short_name": "ScoreMatch",
   "description": "Scores de football en direct, favoris et alertes de match.",
-  "start_url": "/matches",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f5f7f5",
   "theme_color": "#176b39",

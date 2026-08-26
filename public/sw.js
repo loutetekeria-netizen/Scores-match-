@@ -1,8 +1,8 @@
-const VERSION = "scorematch-v3-brand-states";
+const VERSION = "scorematch-v4-pwa-root-fallback";
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const OFFLINE_URL = "/offline.html";
-const APP_SHELL = ["/", "/matches", OFFLINE_URL, "/manifest.webmanifest", "/scorematch-logo.svg", "/scorematch-logo.png"];
+const APP_SHELL = ["/", OFFLINE_URL, "/manifest.webmanifest", "/scorematch-logo.svg", "/scorematch-logo.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -79,7 +79,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let payload = { title: "ScoreMatch", body: "Une nouvelle actualité est disponible.", url: "/matches" };
+  let payload = { title: "ScoreMatch", body: "Une nouvelle actualité est disponible.", url: "/" };
   try {
     if (event.data) payload = { ...payload, ...event.data.json() };
   } catch {
@@ -93,7 +93,7 @@ self.addEventListener("push", (event) => {
       badge: "/scorematch-logo.svg",
       tag: payload.tag || "scorematch-update",
       renotify: Boolean(payload.renotify),
-      data: { url: payload.url || "/matches", matchId: payload.matchId },
+      data: { url: payload.url || "/", matchId: payload.matchId },
       actions: payload.actions || [{ action: "open", title: "Voir le match" }],
     })
   );
@@ -101,7 +101,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = event.notification.data?.url || "/matches";
+  const target = event.notification.data?.url || "/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       const existing = clients.find((client) => "focus" in client);
