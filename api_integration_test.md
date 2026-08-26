@@ -69,3 +69,13 @@ Les TTL configurables sont `CACHE_SCORES_LIVE_SECONDS=30`, `CACHE_SCORES_DAY_SEC
 Le test avec Redis 7.0.15 a confirmé `cache.backend=redis`. Le premier appel réel `GET /api/transfers?team=85` a renvoyé 635 résultats et le second appel identique a renvoyé 635 résultats avec `cached=true`. La clé Redis `transfers:team:85:player:all` a été créée avec expiration.
 
 Le réglage Paramètres « Actualisation automatique » pilote désormais réellement l’intervalle frontend. Lorsqu’il est désactivé, aucun intervalle périodique n’est créé. Lorsqu’il est activé, l’actualisation se produit toutes les 30 secondes et reste protégée par le cache Redis côté serveur.
+
+## Test de charge avec Redis activé
+
+Un scénario reproductible est disponible dans `scripts/load-test.mjs`. Il exerce simultanément les routes scores live, transferts, clubs et joueurs et mesure les codes HTTP, le débit, la latence et le taux de réponses `cached=true`.
+
+Avec Redis 7.0.15 activé et 200 requêtes concurrentes réparties sur 40 workers, le test a obtenu 200 réponses HTTP 200, aucun échec, 86,84 requêtes par seconde et un taux de cache de 80 %. La latence médiane était de 36 ms. Le percentile 95 atteignait environ 2,15 s à cause des appels fournisseurs à froid lancés avant le remplissage de certaines clés.
+
+Après réchauffement du cache, 100 requêtes concurrentes réparties sur 40 workers ont obtenu 100 réponses HTTP 200, un taux de cache de 100 %, 326,98 requêtes par seconde, une latence médiane de 82 ms et un percentile 95 d’environ 194 ms. Les quatre routes ont été servies sans nouvel appel nécessaire au fournisseur pour les données déjà présentes dans Redis.
+
+Le test initial avec la limite de production de 120 requêtes par minute a retourné des HTTP 429 au-delà du seuil. Cette réponse est attendue et confirme que la protection anti-abus évite qu’une forte charge cliente ne dépasse silencieusement la capacité prévue. La limite est désormais configurable par `RATE_LIMIT_MAX`, avec 120 par défaut. La valeur 1000 utilisée pour le test de capacité était limitée à l’environnement de test et ne doit pas être utilisée telle quelle en production.

@@ -24,7 +24,7 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(cors({ origin, credentials: true, methods: ["GET"] }));
 app.use(express.json({ limit: "32kb" }));
-app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false }));
+app.use(rateLimit({ windowMs: 60_000, limit: Number(process.env.RATE_LIMIT_MAX ?? 120), standardHeaders: true, legacyHeaders: false }));
 
 app.get("/health", (_req, res) => res.json({ ok: true, provider: process.env.SCORES_PROVIDER ?? "sportmonks", cache: cacheStats() }));
 
