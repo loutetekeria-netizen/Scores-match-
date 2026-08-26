@@ -1,3 +1,10 @@
+export type ApiCompetition = {
+  key: string;
+  name: string;
+  country: string;
+  apiFootballId: number;
+};
+
 export type ApiMatchEvent = {
   id: string;
   type: "goal" | "card" | "substitution" | "var" | "kickoff" | "fulltime" | "other";
@@ -66,8 +73,15 @@ export function hasLiveApi() {
   return Boolean(API_BASE_URL);
 }
 
-export async function fetchMatches(date: string, signal?: AbortSignal): Promise<ApiMatch[]> {
-  const payload = await request<{ data: ApiMatch[] }>(`/api/scores?date=${encodeURIComponent(date)}`, signal);
+export async function fetchMatches(date: string, signal?: AbortSignal, league?: number): Promise<ApiMatch[]> {
+  const params = new URLSearchParams({ date });
+  if (league) params.set("league", String(league));
+  const payload = await request<{ data: ApiMatch[] }>(`/api/scores?${params.toString()}`, signal);
+  return payload.data;
+}
+
+export async function fetchCompetitions(signal?: AbortSignal): Promise<ApiCompetition[]> {
+  const payload = await request<{ data: ApiCompetition[] }>("/api/competitions", signal);
   return payload.data;
 }
 

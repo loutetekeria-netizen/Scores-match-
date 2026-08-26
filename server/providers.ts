@@ -42,11 +42,12 @@ function isoDateForLabel(date?: string) {
   return value.toISOString().slice(0, 10);
 }
 
-export async function getFromApiFootball(date?: string): Promise<NormalizedMatch[]> {
+export async function getFromApiFootball(date?: string, league?: number): Promise<NormalizedMatch[]> {
   if (!process.env.API_FOOTBALL_KEY) throw new Error("API_FOOTBALL_KEY is missing");
   const url = new URL("https://v3.football.api-sports.io/fixtures");
   if (date === "En direct (2)" || date === "Aujourd’hui") url.searchParams.set("live", "all");
   else url.searchParams.set("date", /^\\d{4}-\\d{2}-\\d{2}$/.test(date ?? "") ? date! : isoDateForLabel(date));
+  if (league) url.searchParams.set("league", String(league));
   const result = await json(url, { "x-apisports-key": process.env.API_FOOTBALL_KEY });
   return (result.response ?? []).filter((fixture: any) => competitionFor(fixture.league?.name ?? "", fixture.league?.id)).map((fixture: any) => {
     const fixtureStatus = fixture.fixture?.status?.short;

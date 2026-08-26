@@ -43,3 +43,9 @@ Le build TypeScript et Vite termine sans erreur. Le bundle produit reste compati
 La connexion aux scores live avec des données réelles est validée. La route backend `/api/transfers` est également validée avec des données réelles provenant d’API-Football. Les deux flux passent par le backend ScoreMatch et ne dévoilent pas la clé au navigateur.
 
 Pour la production, la clé doit être ajoutée comme secret dans l’hébergeur utilisé, puis la clé actuellement partagée dans la conversation doit être révoquée et remplacée depuis le tableau de bord API-Football.
+
+## Activation des compétitions et des matchs live
+
+Le catalogue `GET /api/competitions` expose les huit championnats configurés avec leurs identifiants API-Football. La route `/api/scores` accepte maintenant un paramètre `league` validé côté serveur afin de charger les rencontres live d’un championnat précis.
+
+La vue Compétitions charge ce catalogue, rend chaque championnat sélectionnable et affiche un état de chargement, une erreur fournisseur, une liste de matchs live ou un état vide. Sur l’écran principal, les matchs dont le statut est `live` sont triés avant les autres et le compteur live est calculé depuis la réponse API.

@@ -5,6 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { getMatch, getMatches } from "./sportmonks.js";
+import { TOP_COMPETITIONS } from "./competitions.js";
 import { getFromApiFootball, getFromFootballData, getTransfersFromApiFootball } from "./providers.js";
 
 const app = express();
@@ -19,11 +20,14 @@ app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyH
 
 app.get("/health", (_req, res) => res.json({ ok: true, provider: process.env.SCORES_PROVIDER ?? "sportmonks" }));
 
+app.get("/api/competitions", (_req, res) => res.json({ data: TOP_COMPETITIONS.map(({ key, name, country, apiFootballId }) => ({ key, name, country, apiFootballId })) }));
+
 app.get("/api/scores", async (req, res) => {
-  const date = z.string().max(40).default("Aujourd’hui").parse(req.query.date ?? "Aujourd’hui");
+  const query = z.object({ date: z.string().max(40).default("Aujourd’hui"), league: z.coerce.number().int().positive().optional() }).parse(req.query);
+  const date = query.date;
   try {
     const provider = process.env.SCORES_PROVIDER ?? "sportmonks";
-    const data = provider === "api-football" ? await getFromApiFootball(date) : provider === "football-data" ? await getFromFootballData(date) : await getMatches(date);
+    const data = provider === "api-football" ? await getFromApiFootball(date, query.league) : provider === "football-data" ? await getFromFootballData(date) : await getMatches(date);
     res.setHeader("Cache-Control", date === "Aujourd’hui" || date === "En direct (2)" ? "public, max-age=5, stale-while-revalidate=15" : "public, max-age=60");
     return res.json({ data, updatedAt: new Date().toISOString() });
   } catch (error) {
