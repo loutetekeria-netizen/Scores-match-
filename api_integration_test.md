@@ -59,3 +59,13 @@ Le test réel `GET /api/teams?league=39` a retourné 20 clubs de Premier League 
 La vue Équipes propose une recherche et affiche les écussons renvoyés par le fournisseur. La vue Joueurs propose une recherche, les photos réelles et les statistiques disponibles. La vue Compétitions affiche les logos API-Sports associés aux huit identifiants de ligue configurés.
 
 La vue Paramètres utilise maintenant des contrôles contrôlés et persiste les alertes de buts, l’actualisation automatique et le mode compact dans le stockage local du navigateur. Elle indique explicitement que cette persistance est locale tant qu’aucun compte authentifié n’est disponible.
+
+## Cache Redis et actualisation automatique
+
+Le backend utilise désormais Redis lorsqu’une variable `REDIS_URL` est définie. Les clés sont normalisées par type de ressource et paramètres, avec déduplication des requêtes simultanées. En l’absence de Redis, un cache mémoire temporaire est utilisé pour préserver le fonctionnement local ; ce repli ne doit pas être retenu pour une production multi-instance.
+
+Les TTL configurables sont `CACHE_SCORES_LIVE_SECONDS=30`, `CACHE_SCORES_DAY_SECONDS=300`, `CACHE_TRANSFERS_SECONDS=1800`, `CACHE_TEAMS_SECONDS=86400` et `CACHE_PLAYERS_SECONDS=3600`. Le catalogue des compétitions est conservé sept jours.
+
+Le test avec Redis 7.0.15 a confirmé `cache.backend=redis`. Le premier appel réel `GET /api/transfers?team=85` a renvoyé 635 résultats et le second appel identique a renvoyé 635 résultats avec `cached=true`. La clé Redis `transfers:team:85:player:all` a été créée avec expiration.
+
+Le réglage Paramètres « Actualisation automatique » pilote désormais réellement l’intervalle frontend. Lorsqu’il est désactivé, aucun intervalle périodique n’est créé. Lorsqu’il est activé, l’actualisation se produit toutes les 30 secondes et reste protégée par le cache Redis côté serveur.
