@@ -1,8 +1,12 @@
+export type ApiTeam = { id: number; name: string; code?: string; country?: string; logo?: string; founded?: number };
+export type ApiPlayer = { id: number; name: string; firstName?: string; lastName?: string; age?: number; nationality?: string; photo?: string; position?: string; team?: { id?: number; name?: string; logo?: string }; stats?: { appearances?: number; goals?: number; assists?: number; rating?: string; shots?: number; passes?: number; minutes?: number } };
+
 export type ApiCompetition = {
   key: string;
   name: string;
   country: string;
   apiFootballId: number;
+  logo?: string;
 };
 
 export type ApiMatchEvent = {
@@ -82,6 +86,23 @@ export async function fetchMatches(date: string, signal?: AbortSignal, league?: 
 
 export async function fetchCompetitions(signal?: AbortSignal): Promise<ApiCompetition[]> {
   const payload = await request<{ data: ApiCompetition[] }>("/api/competitions", signal);
+  return payload.data;
+}
+export async function fetchTeams(filters: { league?: number; season?: number; search?: string } = {}, signal?: AbortSignal): Promise<ApiTeam[]> {
+  const params = new URLSearchParams();
+  if (filters.league) params.set("league", String(filters.league));
+  if (filters.season) params.set("season", String(filters.season));
+  if (filters.search) params.set("search", filters.search);
+  const payload = await request<{ data: ApiTeam[] }>(`/api/teams${params.toString() ? `?${params}` : ""}`, signal);
+  return payload.data;
+}
+export async function fetchPlayers(filters: { league?: number; season?: number; search?: string; page?: number } = {}, signal?: AbortSignal): Promise<ApiPlayer[]> {
+  const params = new URLSearchParams();
+  if (filters.league) params.set("league", String(filters.league));
+  if (filters.season) params.set("season", String(filters.season));
+  if (filters.search) params.set("search", filters.search);
+  if (filters.page) params.set("page", String(filters.page));
+  const payload = await request<{ data: ApiPlayer[] }>(`/api/players${params.toString() ? `?${params}` : ""}`, signal);
   return payload.data;
 }
 

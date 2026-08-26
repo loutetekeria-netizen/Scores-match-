@@ -49,3 +49,13 @@ Pour la production, la clé doit être ajoutée comme secret dans l’hébergeur
 Le catalogue `GET /api/competitions` expose les huit championnats configurés avec leurs identifiants API-Football. La route `/api/scores` accepte maintenant un paramètre `league` validé côté serveur afin de charger les rencontres live d’un championnat précis.
 
 La vue Compétitions charge ce catalogue, rend chaque championnat sélectionnable et affiche un état de chargement, une erreur fournisseur, une liste de matchs live ou un état vide. Sur l’écran principal, les matchs dont le statut est `live` sont triés avant les autres et le compteur live est calculé depuis la réponse API.
+
+## Enrichissement des interfaces clubs, joueurs et compétitions
+
+Les routes `GET /api/teams` et `GET /api/players` utilisent maintenant les réponses API-Football avec une saison configurable. Le forfait utilisé pendant le test refuse les saisons 2025 et 2026 et autorise les saisons 2022 à 2024 ; `API_FOOTBALL_SEASON=2024` est donc la valeur par défaut documentée.
+
+Le test réel `GET /api/teams?league=39` a retourné 20 clubs de Premier League avec leurs écussons API-Football. Le test `GET /api/players?league=39&page=1` a retourné 20 joueurs avec photos, club, position et statistiques disponibles comme apparitions, buts, passes, tirs, passes réussies, minutes et note.
+
+La vue Équipes propose une recherche et affiche les écussons renvoyés par le fournisseur. La vue Joueurs propose une recherche, les photos réelles et les statistiques disponibles. La vue Compétitions affiche les logos API-Sports associés aux huit identifiants de ligue configurés.
+
+La vue Paramètres utilise maintenant des contrôles contrôlés et persiste les alertes de buts, l’actualisation automatique et le mode compact dans le stockage local du navigateur. Elle indique explicitement que cette persistance est locale tant qu’aucun compte authentifié n’est disponible.

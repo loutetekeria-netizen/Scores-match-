@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { getMatch, getMatches } from "./sportmonks.js";
 import { TOP_COMPETITIONS } from "./competitions.js";
-import { getFromApiFootball, getFromFootballData, getTransfersFromApiFootball } from "./providers.js";
+import { getFromApiFootball, getFromFootballData, getPlayersFromApiFootball, getTeamsFromApiFootball, getTransfersFromApiFootball } from "./providers.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -20,7 +20,33 @@ app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyH
 
 app.get("/health", (_req, res) => res.json({ ok: true, provider: process.env.SCORES_PROVIDER ?? "sportmonks" }));
 
-app.get("/api/competitions", (_req, res) => res.json({ data: TOP_COMPETITIONS.map(({ key, name, country, apiFootballId }) => ({ key, name, country, apiFootballId })) }));
+app.get("/api/competitions", (_req, res) => res.json({ data: TOP_COMPETITIONS.map(({ key, name, country, apiFootballId }) => ({ key, name, country, apiFootballId, logo: `https://media.api-sports.io/football/leagues/${apiFootballId}.png` })) }));
+
+app.get("/api/teams", async (req, res) => {
+  const query = z.object({ league: z.coerce.number().int().positive().optional(), season: z.coerce.number().int().min(2022).max(2024).default(Number(process.env.API_FOOTBALL_SEASON ?? 2024)), search: z.string().trim().min(2).max(50).optional() }).parse(req.query);
+  try {
+    if ((process.env.SCORES_PROVIDER ?? "sportmonks") !== "api-football") return res.status(501).json({ error: "teams_provider_not_supported" });
+    const data = await getTeamsFromApiFootball(query);
+    res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+    return res.json({ data, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("teams_error", error instanceof Error ? error.message : "unknown");
+    return res.status(502).json({ error: "teams_provider_unavailable" });
+  }
+});
+
+app.get("/api/players", async (req, res) => {
+  const query = z.object({ league: z.coerce.number().int().positive().optional(), season: z.coerce.number().int().min(2022).max(2024).default(Number(process.env.API_FOOTBALL_SEASON ?? 2024)), search: z.string().trim().min(2).max(50).optional(), page: z.coerce.number().int().min(1).max(20).default(1) }).parse(req.query);
+  try {
+    if ((process.env.SCORES_PROVIDER ?? "sportmonks") !== "api-football") return res.status(501).json({ error: "players_provider_not_supported" });
+    const data = await getPlayersFromApiFootball(query);
+    res.setHeader("Cache-Control", "public, max-age=900, stale-while-revalidate=3600");
+    return res.json({ data, updatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("players_error", error instanceof Error ? error.message : "unknown");
+    return res.status(502).json({ error: "players_provider_unavailable" });
+  }
+});
 
 app.get("/api/scores", async (req, res) => {
   const query = z.object({ date: z.string().max(40).default("Aujourd’hui"), league: z.coerce.number().int().positive().optional() }).parse(req.query);

@@ -58,6 +58,52 @@ export async function getFromApiFootball(date?: string, league?: number): Promis
   });
 }
 
+export type NormalizedTeam = {
+  id: number;
+  name: string;
+  code?: string;
+  country?: string;
+  logo?: string;
+  founded?: number;
+};
+
+export type NormalizedPlayer = {
+  id: number;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
+  nationality?: string;
+  photo?: string;
+  position?: string;
+  team?: { id?: number; name?: string; logo?: string };
+  stats?: { appearances?: number; goals?: number; assists?: number; rating?: string; shots?: number; passes?: number; minutes?: number };
+};
+
+export async function getTeamsFromApiFootball(filters: { league?: number; season: number; search?: string }): Promise<NormalizedTeam[]> {
+  if (!process.env.API_FOOTBALL_KEY) throw new Error("API_FOOTBALL_KEY is missing");
+  const url = new URL("https://v3.football.api-sports.io/teams");
+  if (filters.league) url.searchParams.set("league", String(filters.league));
+  url.searchParams.set("season", String(filters.season));
+  if (filters.search) url.searchParams.set("search", filters.search);
+  const result = await json(url, { "x-apisports-key": process.env.API_FOOTBALL_KEY });
+  return (result.response ?? []).map((entry: any) => ({ id: Number(entry.team?.id), name: entry.team?.name ?? "Équipe inconnue", code: entry.team?.code ?? undefined, country: entry.team?.country ?? undefined, logo: entry.team?.logo ?? undefined, founded: entry.team?.founded ?? undefined } satisfies NormalizedTeam));
+}
+
+export async function getPlayersFromApiFootball(filters: { league?: number; season: number; search?: string; page?: number }): Promise<NormalizedPlayer[]> {
+  if (!process.env.API_FOOTBALL_KEY) throw new Error("API_FOOTBALL_KEY is missing");
+  const url = new URL("https://v3.football.api-sports.io/players");
+  url.searchParams.set("season", String(filters.season));
+  if (filters.league) url.searchParams.set("league", String(filters.league));
+  if (filters.search) url.searchParams.set("search", filters.search);
+  if (filters.page) url.searchParams.set("page", String(filters.page));
+  const result = await json(url, { "x-apisports-key": process.env.API_FOOTBALL_KEY });
+  return (result.response ?? []).map((entry: any) => {
+    const statistic = entry.statistics?.[0];
+    return { id: Number(entry.player?.id), name: entry.player?.name ?? "Joueur inconnu", firstName: entry.player?.firstname ?? undefined, lastName: entry.player?.lastname ?? undefined, age: entry.player?.age ?? undefined, nationality: entry.player?.nationality ?? undefined, photo: entry.player?.photo ?? undefined, position: statistic?.games?.position ?? undefined, team: statistic?.team ? { id: statistic.team.id, name: statistic.team.name, logo: statistic.team.logo } : undefined, stats: statistic ? { appearances: statistic.games?.appearences ?? undefined, goals: statistic.goals?.total ?? undefined, assists: statistic.goals?.assists ?? undefined, rating: statistic.games?.rating ?? undefined, shots: statistic.shots?.total ?? undefined, passes: statistic.passes?.total ?? undefined, minutes: statistic.games?.minutes ?? undefined } : undefined } satisfies NormalizedPlayer;
+  });
+}
+
 export type NormalizedTransfer = {
   playerId: number;
   player: string;
